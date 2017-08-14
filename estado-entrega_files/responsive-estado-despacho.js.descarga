@@ -1,0 +1,779 @@
+//document.addEventListener('touchmove',function(e) { e.preventDefault() },false);
+jQuery(document).ready(function(jQuery) {
+            var windowsize = jQuery( window ).width();
+            jQuery(window).resize(function() {
+                windowsize = jQuery( window ).width(); 
+                console.log(windowsize);
+                if(windowsize <= 640){
+                    jQuery('.showMobile').show();
+                    jQuery('.showFull').hide();
+                } else {
+                    jQuery('.showMobile').hide();
+                    jQuery('.showFull').show();
+                }
+            });
+            jQuery('.cerrarLightbox').click(function(e){
+                e.preventDefault();
+                jQuery('.overlay').fadeOut(); 
+            });
+            jQuery('.step').click(function(e){
+                e.preventDefault();
+                var _this = jQuery(this);
+                if(_this.find('.cloud').hasClass('open')) {
+                        jQuery('.cloud').removeClass('open');
+                        jQuery('.cloud .big').hide();
+                } else {
+                    jQuery('.cloud').removeClass('open');
+                    jQuery('.cloud .big').hide();
+                    jQuery(this).find('.big').fadeToggle('fast', 'linear');
+                        
+                    if(_this.find('.big').is(':visible')){
+                        _this.find('.cloud').addClass('open');       
+                    }
+             
+                    
+                }
+            });
+            jQuery('#inputFormGuestTracking').keyup(function (){
+                  this.value = (this.value + '').replace(/[^0-9]/g, '');
+                });
+});    
+
+/* MHTN OrderTracking: added validation for solving issue 58 */
+function submitOrderDetails(){
+	var input=dojo.byId("inputFormGuestTracking");
+	var param=[];
+	param.orderId=input.value;
+	param.tab='tienda';
+	if(validateOrderMhntId(param.orderId))
+	{
+		jQuery('.errorMsg').fadeOut();
+		jQuery('.errorMsg2').fadeOut();
+		if(param.orderId.length > 7 && param.orderId.length <= 20)
+		{
+			wc.service.invoke("AjaxSingleOrderDetailsService",param);
+		}
+		else{
+			jQuery('.errorMsg').fadeOut();
+			jQuery('.errorMsg2').fadeIn();
+		}
+	}else{
+		jQuery('.errorMsg').fadeIn();
+		jQuery('.errorMsg2').fadeOut();
+	}
+}
+function validateOrderMhntId(orderId){
+	var re = /^[0-9-]{0,}[0-9]$/; 
+	if(re.exec(orderId)){
+		return true;
+	}else{
+		return  false;
+	}
+}
+function gup( name ){
+	var regexS = "[\\?&]"+name+"=([^&#]*)";
+	var regex = new RegExp ( regexS );
+	var tmpURL = window.location.href;
+	var results = regex.exec( tmpURL );
+	if( results == null )
+		return"";
+	else
+		return results[1];
+}
+
+/*MHTN Defect 436*/
+var normalize = (function() {
+	  var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç", 
+	      to   = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+	      mapping = {};
+	 
+	  for(var i = 0, j = from.length; i < j; i++ )
+	      mapping[ from.charAt( i ) ] = to.charAt( i );
+	 
+	  return function( str ) {
+	      var ret = [];
+	      for( var i = 0, j = str.length; i < j; i++ ) {
+	          var c = str.charAt( i );
+	          if( mapping.hasOwnProperty( str.charAt( i ) ) )
+	              ret.push( mapping[ c ] );
+	          else
+	              ret.push( c );
+	      } 
+	     
+	      return ret.join( '' ).replace( /\s/g,"_" ).toLowerCase();
+	      
+	  }
+	 
+	})();
+/*MHTN Defect 436*/
+
+function populateTimeLineDetails(timeLine)
+{
+	jQuery('.cloud').remove();
+	jQuery('.step').removeClass('active');
+	jQuery('.step').each(function(key, element){
+		jQuery.each(timeLine, function( index, value ) {
+			var step=jQuery(element).attr('id');
+			var timeLineIndex=index;			
+			
+			//Parcialmente entregada mapped to entrada's id
+			var parcial=dojo.byId('status515Txt').value;
+			//PAR 1145 OrderTracking Picked Up - Added Extra condition for Picked up 'status7Txt'	
+			if(((index==dojo.byId('status51Txt').value) || (index==dojo.byId('status7Txt').value)) && step.toLowerCase()==parcial.toLowerCase())
+			{   
+				index=dojo.byId('status515Txt').value; //put Entragado, to make lighbox active at this level.
+				
+			}
+			
+			/*MHTN Defect 436: Problem in lighbox css indicator,it was not at center*/			
+			var NewID = normalize(step);
+			  var re = /ó/gi;
+			  NewID = NewID.replace(re, "o");
+
+			var CompareID = normalize(index);
+			 CompareID = CompareID.replace( /ó/g,"o" );
+			 
+			if(NewID==CompareID)
+			{
+				 
+				  jQuery(element).addClass('active');
+				  document.getElementById(step).id = NewID;  //overwrite the Id,to make use of TrackingOrder CSS
+						  
+				  var aReff = document.createElement("A"); 
+				  aReff.appendChild(document.createTextNode(value.length + " Prod."));
+				  var div=document.createElement("DIV");
+				  div.className='cloud';
+				  div.appendChild(aReff);				  
+				  				  
+				  var divChild=document.createElement("DIV");
+				  divChild.className='tooltip big';
+				  //create licgthbox
+				  for (i = 0; i < value.length; i++) {
+					  var ul= document.createElement("UL"); 
+					  var il= document.createElement("LI"); 					  
+					  var img=document.createElement("IMG");
+					  img.src=value[i].imgUrl;
+					  il.appendChild(img);
+					  var divIl=document.createElement("DIV");
+					  var prod=document.createElement("P");
+					  prod.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_SKU').value+": "));
+					  prod.appendChild(document.createTextNode(value[i].itemID));
+					  prod.appendChild(document.createElement("BR"));
+					  prod.appendChild(document.createTextNode(value[i].itemDescription));
+					  prod.appendChild(document.createElement("BR"));
+					  prod.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_OR_CRTE_DATE').value+": "));
+					  prod.appendChild(document.createTextNode(value[i].dateOfDelivery));
+					  prod.appendChild(document.createElement("BR"));
+					  
+					  if(value[i].showMsgDelivery==true) 
+						{	 
+						  if(timeLineIndex==dojo.byId('status51Txt').value) //partial delivery case
+						  {
+						  	prod.appendChild(document.createTextNode("Entregado "+value[i].totalDeliveredQty+" de "+value[i].totalComputedQty)); 
+						  }
+						else if(timeLineIndex==dojo.byId('status515Txt').value) // Delivery case
+						  {
+							prod.appendChild(document.createTextNode("Entregado")); 
+						  }
+						  //CR changes - 9 Nov 2015
+						  else if(timeLineIndex==dojo.byId('status4Txt').value) //partial Shipping case : 9 Nov 2015
+						  {
+						  	prod.appendChild(document.createTextNode("En Ruta "+value[i].totalDeliveredQty+" de "+value[i].totalComputedQty)); 
+						  }
+						 
+						  
+						}
+					  divIl.appendChild(prod)
+					  il.appendChild(divIl);
+					  ul.appendChild(il)
+					  divChild.appendChild(ul);
+					  div.appendChild(divChild);		
+				  }  
+				  divChild=document.createElement("DIV");
+				  divChild.className='bottomArrow';
+				  div.appendChild(divChild);
+				  /* MTHN DEFECT : 80*/
+				  jQuery(element).append(div);
+				  /* MTHN DEFECT : 80*/
+				  
+			}			 
+		});		    
+	});	
+}
+function populateDetails(order)
+{
+	jQuery('#orderNumber').text(order.orderNumber);
+	jQuery('#orderCreatedDate').text(order.orderCreatedDate);
+	jQuery('#tbodyDetails').remove();
+	
+	//MHTN :CLICK AND COLLECT
+	if(order.orderCC){
+		dojo.byId('status_4').innerHTML = dojo.byId('status6Txt').value;
+		
+		dojo.query('.step').forEach(function(node){			  
+		  if(jQuery(node).attr('data-id')){
+		    node.id = "entregado_en_tienda";
+		  }
+		});
+		
+		
+	}else{
+		dojo.byId('status_4').innerHTML = dojo.byId('status4Txt').value;
+	
+		dojo.query('.step').forEach(function(node){			  
+		  if(jQuery(node).attr('data-id')){
+		    node.id = "en_ruta";
+		  }
+		});
+	}	
+	//MHTN :CLICK AND COLLECT
+	
+	var detailTableFull=dojo.byId('detailTableFull');
+	var trackingOrderItems=order.orderItems;
+	var tbody=document.createElement('tbody');
+	tbody.id='tbodyDetails';
+	for (i = 0; i < trackingOrderItems.length; i++){
+		
+		var tr = document.createElement('TR');
+		
+		var td = document.createElement('TD')
+		var img=document.createElement("IMG");
+		img.src=trackingOrderItems[i].imgUrl;
+		td.appendChild(img);
+		tr.appendChild(td);
+		td.className='ImgCenter';
+		td = document.createElement('TD')
+		td.appendChild(document.createTextNode(trackingOrderItems[i].itemID));
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		td.appendChild(document.createTextNode(trackingOrderItems[i].itemDescription));
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		td.appendChild(document.createTextNode(trackingOrderItems[i].totalAllocatedQty));
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		td.appendChild(document.createTextNode(trackingOrderItems[i].dateOfDelivery));
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		var jornada = "";//Req 1048
+		if(trackingOrderItems[i].timeSheet == 'TH'){
+			jornada = "TODO HORARIO";
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'JN'){
+			td.className="noche";
+			//var nocheimg=document.createElement("IMG");
+			//nocheimg.src="/wcsstore/CencosudStorefrontAssetStore/images/luna_azul_icon.png";
+			//nocheimg.id ="noche_ordertrack";
+			//nocheimg.className="luna_icon";
+			jornada ="NOCTURNA";
+			//td.appendChild(nocheimg);
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'AM'){
+			jornada = document.getElementById('jornadaText').value;
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'PM'){
+			jornada = "TARDE";
+			td.appendChild(document.createTextNode(jornada));
+		}
+		
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		td.appendChild(document.createTextNode(trackingOrderItems[i].mustDeliverBy));
+		tr.appendChild(td);
+		td = document.createElement('TD')
+		
+		// Added condition below to map the accents Linestatus through store property file: by Rahul.Ranjan
+		if(trackingOrderItems[i].orderLineStatus==dojo.byId('status21Txt').value)
+		{
+			trackingOrderItems[i].orderLineStatus=dojo.byId('status212Txt').value;
+		} 
+		else if(trackingOrderItems[i].orderLineStatus==dojo.byId('status31Txt').value)
+		{
+			trackingOrderItems[i].orderLineStatus=dojo.byId('status313Txt').value;
+		}
+		else if(trackingOrderItems[i].orderLineStatus==dojo.byId('status61Txt').value || trackingOrderItems[i].orderLineStatus==dojo.byId('status62Txt').value)
+		{
+			trackingOrderItems[i].orderLineStatus=dojo.byId('status6Txt').value;
+		}
+		//PAR 1145 OrderTracking Picked Up case - added extra condition for Picked Up 'status7Txt' 
+		else if(trackingOrderItems[i].orderLineStatus==dojo.byId('status7Txt').value)
+		{
+			trackingOrderItems[i].orderLineStatus=dojo.byId('status515Txt').value;
+		}
+		
+		td.appendChild(document.createTextNode(trackingOrderItems[i].orderLineStatus));
+		tr.appendChild(td);		
+		tbody.appendChild(tr)
+		
+		
+		//mobile Details
+		var table=document.createElement('TABLE');
+		table.className='mobileTable detailTable';
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		var th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_SKU').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].itemID));
+		tr.appendChild(th);
+		tr.appendChild(td);
+
+		tr.className='hide';
+		table.appendChild(tr);
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_PRODUCT').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].itemDescription));
+		tr.appendChild(th);	
+		tr.appendChild(td);
+	
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_QUANTITY').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].totalAllocatedQty));
+		tr.appendChild(th);
+		tr.appendChild(td);
+
+		tr.className='hide';
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_OR_CRTE_DATE').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].dateOfDelivery));
+		tr.appendChild(th);
+		tr.appendChild(td);
+
+		tr.className='hide';
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_TIMESHEET').value));
+		var jornada = "";//Req 1048
+		if(trackingOrderItems[i].timeSheet == 'TH'){
+			jornada = "TODO HORARIO";
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'JN'){
+			td.className="noche";
+			var nocheimg=document.createElement("IMG");
+			nocheimg.src="/wcsstore/CencosudStorefrontAssetStore/images/luna_azul_icon.png";
+			nocheimg.id ="noche_ordertrack";
+			nocheimg.className="luna_icon";
+			jornada ="NOCHE";
+			td.appendChild(nocheimg);
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'AM'){
+			jornada = document.getElementById('jornadaText').value;
+			td.appendChild(document.createTextNode(jornada));
+		}else if(trackingOrderItems[i].timeSheet == 'PM'){
+			jornada = "TARDE";
+			td.appendChild(document.createTextNode(jornada));
+		}
+		
+		tr.appendChild(th);
+		tr.appendChild(td);
+
+		tr.className='hide';
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th=document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_DELIVERY_BY').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].mustDeliverBy));
+		tr.appendChild(th);
+		tr.appendChild(td);
+
+		tr.className='hide';
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		th = document.createElement('TH')
+		th.appendChild(document.createTextNode(dojo.byId('TABLE_DETAILS_DELIVERY_STATE').value));
+		td.appendChild(document.createTextNode(trackingOrderItems[i].orderLineStatus));
+		//MTHN: Defect - 89
+		td.className='onlyTextTransform';
+		//MTHN: Defect - 89
+		tr.appendChild(th);	
+		tr.appendChild(td);
+		
+		table.appendChild(tr);
+		
+		tr = document.createElement('TR')
+		td = document.createElement('TD')
+		var span=document.createElement('SPAN')
+		span.appendChild(document.createTextNode('+'));
+		td.appendChild(span);
+		//MTHN: Defect - 89
+		/* MHT: Solucion Ver mas acordion fixed by Felipe Ojeda */
+		 /*MTHN DEFECT - 346*/
+		td.appendChild(document.createTextNode('Mostrar detalles'));
+		 /*MTHN DEFECT - 346*/
+		//MTHN: Defect - 89
+		td.className='showmore';
+		td.colSpan='2';
+		tr.appendChild(td);
+		table.appendChild(tr);
+		dojo.byId('divTableDetailMobile').appendChild(table);	
+		/* MHT: Solucion Ver mas acordion fixed by Felipe Ojeda */
+		/*MHTN Defect 487*/       
+		
+	}
+	/*MHTN: DEFECT 648*/
+	/*MHTN CYCLE4 - DEFECT 879*/
+	jQuery(document).on('click', '.showmore', function(e){
+	//jQuery('.showmore').live("click",function(e){
+		 e.preventDefault();
+         var _this = jQuery(this);
+         jQuery(this).parent().parent().find('.hide').slideToggle(
+         'fast',
+         function(){
+         	 /*MTHN DEFECT - 346*/
+             if(_this.parent().parent().find('.hide').is(':visible')){
+             
+                 _this.html('Ocultar detalle <span>-</span>');
+                 //MTHN: Defect - 89
+             
+             } else {
+             	//MTHN: Defect - 89
+                 _this.html('Mostrar detalles <span>+</span>');    
+             }
+              /*MTHN DEFECT - 346*/
+         }
+         );
+     });
+	/*MHTN: DEFECT 648*/
+	
+	detailTableFull.appendChild(tbody);
+	
+	// DEFECT - 75
+	if(trackingOrderItems.length > 1){
+		// Sorting Table
+    	jQuery('#detailTableFull').tablesorter({ 
+			// enable debug mode 
+			//debug: true,
+    		headers: {0:{sorter:false}}
+		});
+		jQuery('#detailTableFull th').css('cursor','pointer');
+		/*MHTN CYCLE4 DEFECT 513*/
+		jQuery('.tinydown').fadeIn();
+	}
+	// DEFECT - 75
+
+}
+/**
+* call services for int 1842 
+* MTHN: Start Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza 
+ */
+wc.service.declare({
+	id: "AjaxOrderCheck",
+	actionId: "/AjaxCENOrderDetailsService",
+	url: getAbsoluteURL() + "AjaxCENOrderDetailsService",
+	formId: ""
+
+ /**
+ * display a success message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,successHandler: function(serviceResponse) {
+			var tab=serviceResponse.tab;
+			var orderExist=serviceResponse.orderExist;
+			var orderId=serviceResponse.orderId;
+			if(orderExist)
+			{
+				if(tab!='tienda')
+				{
+					window.location=jQuery('#AjaxTrackingOrderDetailViewURL').val()+"&orderId="+orderId;
+				}else{
+					window.location=jQuery('#AjaxTrackingOrderTiendaDetailViewURL').val()+"&orderId="+orderId;
+				}
+				
+			}else{
+				jQuery('#noSingleOrder').fadeIn();
+			}
+		}
+
+ /**
+ * display an error message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,failureHandler: function(serviceResponse) {
+		var errorType = serviceResponse.errorMessageParam;
+		if(errorType == 'MHNT_ORDER_NOT_EXIST')
+		{
+			jQuery('#noSingleOrder').fadeIn();
+		}
+		else
+		{
+			jQuery('#lightboxContentError').fadeIn();
+			jQuery('#lightboxContentError.overlay').css('z-index','100'); //defect fix: 588
+					
+		}
+	}
+
+}); 
+
+wc.service.declare({
+	id: "AjaxSingleOrderDetailsService",
+	actionId: "/AjaxCENOrderDetailsService",
+	url: getAbsoluteURL() + "AjaxCENOrderDetailsService",
+	formId: ""
+
+ /**
+ * display a success message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,successHandler: function(serviceResponse) {
+	var trackingOrders=serviceResponse.trackingOrders;
+		if(serviceResponse.trackingOrders==null){
+				$('#noSingleOrder').fadeIn();
+			} 					
+		}
+
+ /**
+ * display an error message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,failureHandler: function(serviceResponse) {
+		 /*$('.showFull>div').removeClass('active');
+		jQuery('.showFull>div').addClass('inactive');
+	 	jQuery('#errorSingleOrder').removeClass('inactive');	
+		jQuery('#errorSingleOrder').addClass('active');
+		jQuery('#errorSingleOrderResponsive').removeClass('inactive');	
+		jQuery('#errorSingleOrderResponsive').addClass('active');
+		jQuery('#tabcontentMobileTienda').addClass('inactive');*/
+		jQuery('#mhntState').val('false');
+		jQuery('#mhntStateFail').show();
+		jQuery('#formTienda').hide();
+		jQuery('#errorSingleOrder').show();
+		
+	}
+
+}); 
+ 
+wc.service.declare({
+	id: "AjaxOrderDetailsService",
+	actionId: "/AjaxCENOrderDetailsService",
+	url: getAbsoluteURL() + "AjaxCENOrderDetailsService",
+	formId: ""
+
+ /**
+ * display a success message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,successHandler: function(serviceResponse) {
+			var trackingOrders=serviceResponse.trackingOrders;
+			var tableOrdersTracking=dojo.byId('orderTrakingTable');
+			if(typeof(trackingOrders) != "undefined"&&trackingOrders.length>0){
+
+				//fill table for web 				
+				for (i = 0; i < trackingOrders.length; i++) {
+	            	var tr = document.createElement('TR');
+					tableOrdersTracking.appendChild(tr);
+	                var td = document.createElement('TD')
+	                var aReff = document.createElement("A");
+	                aReff.id=trackingOrders[i].orderId;
+	                aReff.appendChild(document.createTextNode(trackingOrders[i].orderId));
+	                aReff.className='aReffOrderId';
+	                td.appendChild(aReff);
+	                
+	                tr.appendChild(td);
+	                td = document.createElement('TD')
+	                td.appendChild(document.createTextNode(trackingOrders[i].datePurchasing));
+	                tr.appendChild(td);
+	                td = document.createElement('TD')
+	                td.appendChild(document.createTextNode(trackingOrders[i].total));
+	                tr.appendChild(td);
+	                td = document.createElement('TD')
+	                td.appendChild(document.createTextNode(trackingOrders[i].mhnState));
+	                tr.appendChild(td);	
+          	  }
+          	  //fill for responsive table
+          	  var classOdd=true;
+          	  for (i = 0; i < trackingOrders.length; i++) {
+          	  		var table=document.createElement('TABLE');
+          	  		if(classOdd)
+          	  		{
+          	  			table.className='detailTable odd';
+          	  			classOdd=false;
+          	  		}else
+          	  		{
+          	  			table.className='detailTable';
+          	  			classOdd=true;
+          	  		}
+	            	var tr = document.createElement('TR');
+	            	var td = document.createElement('TD')
+	            	var th = document.createElement('th')
+	            	
+	            	
+	            	td.appendChild(document.createTextNode('<fmt:message key="ORDER_ID_TRACKING1" bundle="${storeText}"/>'));
+	            	var aReff = document.createElement("A");
+	            	aReff.id=trackingOrders[i].orderId;
+	                aReff.appendChild(document.createTextNode(trackingOrders[i].orderId));
+	                aReff.className='aReffOrderId';
+	            	th.appendChild(aReff);
+	            	tr.appendChild(td);
+	            	tr.appendChild(th);
+	            	table.appendChild(tr);
+	            	
+	            	tr = document.createElement('TR');
+	            	td = document.createElement('TD')
+	            	td.appendChild(document.createTextNode('<fmt:message key="DATE_PURCH_TRACKING" bundle="${storeText}"/>'));
+	            	th = document.createElement('th') 
+	            	th.appendChild(document.createTextNode(trackingOrders[i].datePurchasing));
+	            	tr.appendChild(td);
+	            	tr.appendChild(th);
+	            	table.appendChild(tr);
+	            	
+	            	tr = document.createElement('TR');
+	            	td = document.createElement('TD')
+	            	td.appendChild(document.createTextNode('<fmt:message key="TOTAL_ORDER_TRACKING" bundle="${storeText}"/>'));
+	            	th = document.createElement('th') 
+	            	th.appendChild(document.createTextNode(trackingOrders[i].total));
+	            	tr.appendChild(td);
+	            	tr.appendChild(th);
+	            	table.appendChild(tr);
+	            	
+	            	tr = document.createElement('TR');
+	            	td = document.createElement('TD')
+	            	td.appendChild(document.createTextNode('<fmt:message key="STATE_ORDER_TRACKING" bundle="${storeText}"/>'));
+	            	th = document.createElement('th') 
+	            	th.appendChild(document.createTextNode(trackingOrders[i].mhnState));
+	            	tr.appendChild(td);
+	            	tr.appendChild(th);
+	            	table.appendChild(tr);
+	            	
+	            	jQuery('#tableResponsive').append(table);
+
+          	  }
+			}else{
+				jQuery('#noOrders').fadeIn();
+			}
+				cursor_clear();
+				jQuery('.aReffOrderId').click(function (e){
+					e.preventDefault();
+					validateOrder(jQuery(this).attr('id'),"online");
+				
+				});
+		}
+
+ /**
+ * display an error message
+ * @param (object) serviceResponse The service response object, which is the
+ * JSON object returned by the service invocation
+ */
+	,failureHandler: function(serviceResponse) {
+		/*	 	jQuery('.showFull>div').removeClass('active');
+	 	jQuery('.showFull>div').addClass('inactive');*/
+	 	jQuery('#errorSingleOrder').removeClass('inactive');	
+		jQuery('#errorSingleOrder').addClass('active');
+		jQuery('#mhntState').val('false');
+		jQuery('#mhntStateFail').show();
+		jQuery('#formTienda').hide();
+		jQuery('#errorSingleOrder').show();
+		jQuery('#tabcontentMobileTienda').hide();
+		jQuery('#errorSingleOrderResponsive').show();
+		cursor_clear();
+	}
+
+});
+//MTHN: End Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza
+function check(aReffOrderId){
+	var url='${AjaxTrackingOrderDetailViewURL}&orderId='+trackingOrders[i].orderId
+}
+//MTHN: Start Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza
+function invokeOrderDetails(param) {
+	var trackingParams = [];		
+	if(validateOrderMhntId(param.value))
+	{		
+		jQuery('.errorMsg').addClass('inactive');
+		jQuery('.errorMsg2').removeClass('inactive');
+		jQuery('.orderTrackingId').value='';
+		
+		validateOrder(param.value,"tienda");
+	}else
+	{
+		jQuery('.errorMsg').removeClass('inactive');
+		jQuery('.errorMsg2').addClass('inactive');
+	}
+}
+//MTHN: End Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza 
+/* MHTN OrderTracking: added validation for solving issue 58 */
+function validateOrder(orderid,tab)
+{
+	var trackingParams=[];
+	trackingParams.orderId=orderid;
+	trackingParams.tab=tab;
+	trackingParams.orderCheck=true;
+	
+	if(trackingParams.orderId.length > 7 && trackingParams.orderId.length <= 20)
+	{
+		jQuery('.errorMsg2').addClass('inactive');
+		wc.service.invoke("AjaxOrderCheck",trackingParams);
+	}
+	else{
+		jQuery('.errorMsg').addClass('inactive');
+		jQuery('.errorMsg2').removeClass('inactive');
+	}
+}
+
+
+
+
+
+
+//MTHN: Start Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza
+function changeTabsTracking(tabs){
+			var windowsize = jQuery( window ).width();
+            var _rel = jQuery(tabs).attr('rel');
+            jQuery('.showFull>div').removeClass('active');
+            jQuery('.showFull>div').addClass('inactive');
+            jQuery('.showFull .'+_rel).removeClass('inactive');
+            jQuery('.showFull .'+_rel).addClass('active');
+            if(windowsize <= 640){
+                if(!jQuery(tabs).next().is(':visible')){
+                    
+                    jQuery(tabs).next().show();
+                     if(jQuery(tabs).next().is(':visible')){
+                        jQuery(tabs).find('>span').html('-');    
+                    } else {
+                        jQuery(tabs).find('>span').html('+');
+                    }
+                } else {
+                    jQuery(tabs).next().hide();
+                    jQuery(tabs).find('>span').html('+');
+                }
+
+            } else {				                
+                jQuery('.tabsTracking li').removeClass('active');
+                jQuery(tabs).addClass('active');
+            }
+
+          
+        
+}
+function showLigthBox(){
+     //e.preventDefault();
+		 jQuery('#popUpOrderSearch').fadeIn();
+}
+function hideLigthBox(){
+       //e.preventDefault();
+			 jQuery('.overlay').fadeOut();
+}
+//MTHN: End Req#Order Tracking  INT1890 : ajax for Command for Service ORDER DETAILS made by Favio.Penaloza
+
+
+
+    
